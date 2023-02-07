@@ -107,7 +107,11 @@ static ExtensionImpl *find(int number)
  *  @param  number      Module number
  *  @return int         0 on success
  */
+#if PHP_VERSION_ID < 80000
 int ExtensionImpl::processStartup(int type, int module_number)
+#else
+zend_result ExtensionImpl::processStartup(int type, int module_number)
+#endif
 {
     // initialize and allocate the "global" variables
     ZEND_INIT_MODULE_GLOBALS(phpcpp, init_globals, NULL); 
@@ -116,7 +120,7 @@ int ExtensionImpl::processStartup(int type, int module_number)
     auto *extension = find(module_number);
 
     // initialize the extension
-    return BOOL2SUCCESS(extension->initialize(module_number));
+    return extension->initialize(module_number) ? SUCCESS : FAILURE;
 }
 
 /**
@@ -125,7 +129,11 @@ int ExtensionImpl::processStartup(int type, int module_number)
  *  @param  number      Module number
  *  @return int
  */
+#if PHP_VERSION_ID < 80000
 int ExtensionImpl::processShutdown(int type, int module_number)
+#else
+zend_result ExtensionImpl::processShutdown(int type, int module_number)
+#endif
 {
     // get the extension
     auto *extension = find(module_number);
@@ -134,7 +142,7 @@ int ExtensionImpl::processShutdown(int type, int module_number)
     number2extension.erase(module_number);
 
     // done
-    return BOOL2SUCCESS(extension->shutdown(module_number));
+    return extension->shutdown(module_number) ? SUCCESS: FAILURE;
 }
 
 /**
@@ -143,7 +151,11 @@ int ExtensionImpl::processShutdown(int type, int module_number)
  *  @param  number      Module number
  *  @return int         0 on success
  */
+#if PHP_VERSION_ID < 80000
 int ExtensionImpl::processRequest(int type, int module_number)
+#else
+zend_result ExtensionImpl::processRequest(int type, int module_number)
+#endif
 {
     // get the extension
     auto *extension = find(module_number);
@@ -152,7 +164,7 @@ int ExtensionImpl::processRequest(int type, int module_number)
     if (extension->_onRequest) extension->_onRequest();
     
     // done
-    return BOOL2SUCCESS(true);
+    return SUCCESS;
 }
 
 /**
@@ -161,7 +173,11 @@ int ExtensionImpl::processRequest(int type, int module_number)
  *  @param  number      Module number
  *  @return int         0 on success
  */
+#if PHP_VERSION_ID < 80000
 int ExtensionImpl::processIdle(int type, int module_number)
+#else
+zend_result ExtensionImpl::processIdle(int type, int module_number)
+#endif
 {
     // get the extension
     auto *extension = find(module_number);
@@ -170,7 +186,29 @@ int ExtensionImpl::processIdle(int type, int module_number)
     if (extension->_onIdle) extension->_onIdle();
     
     // done
-    return BOOL2SUCCESS(true);
+    return SUCCESS;
+}
+
+/**
+ *  Function that is called when when PHP invokes phpinfo()
+ *  @param  zend_module_entry  Pointer to zend_module_entry
+ *  @return void
+ */
+void ExtensionImpl::processInfo(zend_module_entry* zend_module)
+{
+    // get the extension
+    auto *extension = find(zend_module->module_number);
+
+    // is the callback registered?
+    if (extension->_onInfo) {
+        extension->_onInfo();
+    } else {
+        // if not we display the standard info displayed by PHP
+        php_info_print_table_start();
+        php_info_print_table_row(2, "Version", zend_module->version);
+        php_info_print_table_end();
+        DISPLAY_INI_ENTRIES();
+    }
 }
 
 /**
@@ -180,7 +218,11 @@ int ExtensionImpl::processIdle(int type, int module_number)
  *  @param  number      Module number
  *  @return int         0 on success
  */
+#if PHP_VERSION_ID < 80000
 int ExtensionImpl::processMismatch(int type, int module_number)
+#else
+zend_result ExtensionImpl::processMismatch(int type, int module_number)
+#endif
 {
     // get the extension
     auto *extension = find(module_number);
@@ -189,7 +231,7 @@ int ExtensionImpl::processMismatch(int type, int module_number)
     warning << "Version mismatch between PHP-CPP and extension " << extension->name() << " " << extension->version() << " (recompile needed?)" << std::endl;
     
     // done
-    return BOOL2SUCCESS(true);
+    return SUCCESS;
 }
 
 /**
@@ -218,7 +260,7 @@ ExtensionImpl::ExtensionImpl(Extension *data, const char *name, const char *vers
     _entry.module_shutdown_func = &ExtensionImpl::processShutdown; // shutdown function for the whole extension
     _entry.request_startup_func = &ExtensionImpl::processRequest;  // startup function per request
     _entry.request_shutdown_func = &ExtensionImpl::processIdle;    // shutdown function per request
-    _entry.info_func = NULL;                                       // information for retrieving info
+    _entry.info_func = &ExtensionImpl::processInfo;                // information for retrieving info
     _entry.version = version;                                      // version string
     _entry.globals_size = 0;                                       // size of the global variables
     _entry.globals_ctor = NULL;                                    // constructor for global variables

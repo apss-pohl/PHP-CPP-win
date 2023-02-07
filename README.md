@@ -1,17 +1,24 @@
+NOTE
+=====
+
+This is a fork of the original library by Copernica Marketing Software. Though we should be grateful to them for the generation of this wonderful project, it seems that they have lost interest in it and are not really keeping it updated, having only merged a handful of PRs in the last years and not having updated it for PHP 8.
+
+The aim of this fork is to have a maintained version which incorporates the different PRs that the users might add with fixes and new features and to keep the library updated so that it works with the latest PHP versions. We don't plan to actively develop this library, we will be just adding these updates.
+
 PHP-CPP
 =======
 
-[![Build Status](https://travis-ci.org/CopernicaMarketingSoftware/PHP-CPP.svg?branch=master)](https://travis-ci.org/CopernicaMarketingSoftware/PHP-CPP)
+[![Build Status](https://github.com/fast-debug/PHP-CPP/actions/workflows/github-actions.yml/badge.svg)](https://github.com/fast-debug/PHP-CPP/actions/workflows/github-actions.yml/badge.svg)
 
 The PHP-CPP library is a C++ library for developing PHP extensions. It offers a collection
 of well documented and easy-to-use classes that can be used and extended to build native
 extensions for PHP. The full documentation can be found on http://www.php-cpp.com.
 
-**Watch out: PHP 7 only!**
+**Watch out: PHP 7+ only!**
 This library has been updated to work with PHP versions 7.0 and up. If you wish to create 
 extensions for older PHP versions, use the [PHP-CPP-LEGACY](https://github.com/CopernicaMarketingSoftware/PHP-CPP-LEGACY)
 library instead. The PHP-CPP and PHP-CPP-LEGACY library have (almost) identical API's,
-so you can easily port extensions for PHP 5.* to PHP 7 and the other way around.
+so you can easily port extensions for PHP 5.* to PHP 7+ and the other way around.
 
 ABOUT
 =====
