@@ -55,6 +55,7 @@ public:
     Value(int16_t value);
     Value(int32_t value);
     Value(int64_t value);
+    Value(uintmax_t value);
     Value(bool value);
     Value(char value);
     Value(const std::string &value);
@@ -173,6 +174,7 @@ public:
     Value &operator=(int16_t value);
     Value &operator=(int32_t value);
     Value &operator=(int64_t value);
+    Value &operator=(uintmax_t value);
     Value &operator=(bool value);
     Value &operator=(char value);
     Value &operator=(const std::string &value);
@@ -190,6 +192,7 @@ public:
     Value &operator+=(int16_t value);
     Value &operator+=(int32_t value);
     Value &operator+=(int64_t value);
+    Value &operator+=(uintmax_t value);
     Value &operator+=(bool value);
     Value &operator+=(char value);
     Value &operator+=(const std::string &value);
@@ -205,6 +208,7 @@ public:
     Value &operator-=(int16_t value);
     Value &operator-=(int32_t value);
     Value &operator-=(int64_t value);
+    Value &operator-=(uintmax_t value);
     Value &operator-=(bool value);
     Value &operator-=(char value);
     Value &operator-=(const std::string &value);
@@ -220,6 +224,7 @@ public:
     Value &operator*=(int16_t value);
     Value &operator*=(int32_t value);
     Value &operator*=(int64_t value);
+    Value &operator*=(uintmax_t value);
     Value &operator*=(bool value);
     Value &operator*=(char value);
     Value &operator*=(const std::string &value);
@@ -235,6 +240,7 @@ public:
     Value &operator/=(int16_t value);
     Value &operator/=(int32_t value);
     Value &operator/=(int64_t value);
+    Value &operator/=(uintmax_t value);
     Value &operator/=(bool value);
     Value &operator/=(char value);
     Value &operator/=(const std::string &value);
@@ -250,6 +256,7 @@ public:
     Value &operator%=(int16_t value);
     Value &operator%=(int32_t value);
     Value &operator%=(int64_t value);
+    Value &operator%=(uintmax_t value);
     Value &operator%=(bool value);
     Value &operator%=(char value);
     Value &operator%=(const std::string &value);
@@ -265,6 +272,7 @@ public:
     Value operator+(int16_t value);
     Value operator+(int32_t value);
     Value operator+(int64_t value);
+    Value operator+(uintmax_t value);
     Value operator+(bool value);
     Value operator+(char value);
     Value operator+(const std::string &value);
@@ -280,6 +288,7 @@ public:
     Value operator-(int16_t value);
     Value operator-(int32_t value);
     Value operator-(int64_t value);
+    Value operator-(uintmax_t value);
     Value operator-(bool value);
     Value operator-(char value);
     Value operator-(const std::string &value);
@@ -295,6 +304,7 @@ public:
     Value operator*(int16_t value);
     Value operator*(int32_t value);
     Value operator*(int64_t value);
+    Value operator*(uintmax_t value);
     Value operator*(bool value);
     Value operator*(char value);
     Value operator*(const std::string &value);
@@ -310,6 +320,7 @@ public:
     Value operator/(int16_t value);
     Value operator/(int32_t value);
     Value operator/(int64_t value);
+    Value operator/(uintmax_t value);
     Value operator/(bool value);
     Value operator/(char value);
     Value operator/(const std::string &value);
@@ -325,6 +336,7 @@ public:
     Value operator%(int16_t value);
     Value operator%(int32_t value);
     Value operator%(int64_t value);
+    Value operator%(uintmax_t value);
     Value operator%(bool value);
     Value operator%(char value);
     Value operator%(const std::string &value);
@@ -436,6 +448,7 @@ public:
      */
     int64_t numericValue() const;
 
+    uintmax_t numericValueUnsigned() const;
     /**
      *  Retrieve the value as boolean
      *  @return bool
@@ -673,6 +686,15 @@ public:
     operator int64_t () const
     {
         return numericValue();
+    }
+
+    /**
+     *  Cast to a number
+     *  @return uintmax_t
+     */
+    operator uintmax_t () const
+    {
+        return numericValueUnsigned();
     }
 
     /**
