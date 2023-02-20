@@ -223,7 +223,7 @@ zend_function *ClassImpl::getMethod(zend_object **object, zend_string *method, c
     function->num_args          = 0;
     function->required_num_args = 0;
     function->arg_info          = nullptr;
-    function->handler           = (zif_handler) &ClassImpl::callMethod;
+    function->handler           = (zif_handler)&ClassImpl::callMethod;
 
     // store pointer to ourselves
     data->self = self(entry);
@@ -321,7 +321,7 @@ zend_result ClassImpl::getClosure(zend_object *object, zend_class_entry **entry_
     function->num_args          = 0;
     function->required_num_args = 0;
     function->arg_info          = nullptr;
-    function->handler           = (zif_handler) & ClassImpl::callInvoke;
+    function->handler           = (zif_handler) &ClassImpl::callInvoke;
 
 #if PHP_VERSION_ID < 80000
     // store pointer to ourselves (note that the entry_ptr is useless

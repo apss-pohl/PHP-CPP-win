@@ -75,7 +75,7 @@ private:
                 auto iter = _handles.begin();
                 
                 // remove the handle
-                DL_UNLOAD((HMODULE) * iter);
+                DL_UNLOAD((HMODULE) *iter);
                 
                 // remove from set
                 _handles.erase(iter);

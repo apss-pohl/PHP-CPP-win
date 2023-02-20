@@ -12,6 +12,7 @@
 #include <exception>
 #include <string>
 #include <stdexcept>
+#include <iostream>
 
 /**
  *  Forward declarations
@@ -68,7 +69,7 @@ public:
     {
         // expose the code
         return _code;
-    }
+    };
 };
 
 /**

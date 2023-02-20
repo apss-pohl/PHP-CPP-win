@@ -94,7 +94,7 @@ void Callable::initialize(zend_function_entry *entry, const char *classname, int
     {
         // that's nice, we simply install the callback
         // no need to store any data in a lookup map
-        entry->handler = (zif_handler) _callback;
+        entry->handler = (zif_handler)_callback;
     }
     else
     {
@@ -116,7 +116,7 @@ void Callable::initialize(zend_function_entry *entry, const char *classname, int
 
         // we use our own invoke method, which does a lookup
         // in the map we just installed ourselves in
-        //entry->handler = this->invoke();
+        // entry->handler = &Callable::invoke;
         entry->handler = (zif_handler)_callback;
     }
 
@@ -165,9 +165,9 @@ void Callable::initialize(zend_internal_function_info *info, const char *classna
     info->type = ZEND_TYPE_ENCODE((int)_return, true);
 #else
     if ((int)_return) {
-        info->type = (zend_type)ZEND_TYPE_INIT_CODE((int)_return, true, 0);
+        info->type = ZEND_TYPE_INIT_CODE((int)_return, true, 0);
     } else {
-        info->type = (zend_type)ZEND_TYPE_INIT_NONE(0);
+        info->type = ZEND_TYPE_INIT_NONE(0);
     }
 #endif
 #endif
