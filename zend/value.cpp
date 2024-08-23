@@ -24,12 +24,10 @@
  *  @author Emiel Bruijntjes <emiel.bruijntjes@copernica.com>
  *  @copyright 2013 - 2019 Copernica BV
  */
-
-#pragma warning (disable : 4703)
-
 #include "includes.h"
-#include "strings.h"
+#include "string.h"
 #include "lowercase.h"
+#include "macros.h"
 
 /**
  *  Set up namespace
@@ -131,6 +129,25 @@ Value::Value(const char *value, int size)
 }
 
 /**
+ *  Constructor based on zend_string
+ *  @param  value
+ */
+Value::Value(struct _zend_string *value)
+{
+    // is there a value?
+    if (value)
+    {
+        // create a string zval
+        ZVAL_STRINGL(_val, value->val, value->len);
+    }
+    else
+    {
+        // store null
+        ZVAL_NULL(_val);
+    }
+}
+
+/**
  *  Constructor based on decimal value
  *  @param  value
  */
@@ -165,7 +182,7 @@ Value::Value(struct _zval_struct *val, bool ref)
         // increment refcount
         ++GC_REFCOUNT(ref);
 #else
-	// increment refcount
+        // increment refcount
         GC_ADDREF(ref);
 #endif
         // store the reference in our value
@@ -294,7 +311,7 @@ Value::~Value()
 Php::Zval Value::detach(bool keeprefcount)
 {
     // the return value
-    Php::Zval result;
+    Php::Zval result {};
 
     // copy the value
     ZVAL_COPY_VALUE(result, _val);
@@ -317,7 +334,7 @@ Php::Zval Value::detach(bool keeprefcount)
 void Value::invalidate()
 {
     // do nothing if object is already undefined
-	if (Z_TYPE_P(_val) == IS_UNDEF) return;
+    if (Z_TYPE_P(_val) == IS_UNDEF) return;
 
     // call destructor
     zval_ptr_dtor(_val);
@@ -395,12 +412,14 @@ Value& Value::operator=(struct _zval_struct* value)
     // If the destination is refcounted
     if (Z_REFCOUNTED_P(to))
     {
+#if PHP_VERSION_ID < 80000
         // objects can have their own assignment handler
         if (Z_TYPE_P(to) == IS_OBJECT && Z_OBJ_HANDLER_P(to, set))
         {
             Z_OBJ_HANDLER_P(to, set)(to, value);
             return *this;
         }
+#endif
 
         // If to and from are the same, there is nothing left to do
         if (to == value) return *this;
@@ -766,11 +785,15 @@ static Value do_exec(const zval *object, zval *method, int argc, zval *argv)
 
     // remember current state of the PHP engine
     State state;
-    
+
     // call the function
     // we're casting the const away here, object is only const so we can call this method
     // from const methods after all..
+#if PHP_VERSION_ID < 80000
     if (call_user_function_ex(CG(function_table), (zval*) object, method, &retval, argc, argv, 1, nullptr) != SUCCESS)
+#else
+    if (call_user_function(CG(function_table), (zval*) object, method, &retval, argc, argv) != SUCCESS)
+#endif
     {
         // throw an exception, the function does not exist
         throw Error("Invalid call to "+Value(method).stringValue());
@@ -848,7 +871,11 @@ bool Value::isCallable(const char *name)
     if (!(func->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE)) return true;
 
     // check the result ("Returns true to the fake Closure's __invoke")
+#if PHP_VERSION_ID < 80200
     bool result = func->common.scope == zend_ce_closure && zend_string_equals_literal(methodname.value(), ZEND_INVOKE_FUNC_NAME);
+#else
+    bool result = func->common.scope == zend_ce_closure && zend_string_equals_cstr(methodname.value(), ZEND_INVOKE_FUNC_NAME, ::strlen(ZEND_INVOKE_FUNC_NAME));
+#endif
 
     // free resources (still don't get this code, copied from zend_builtin_functions.c)
     zend_string_release(func->common.function_name);
@@ -895,9 +922,7 @@ Value Value::call(const char *name)
 Value Value::exec(int argc, Value *argv) const
 {
     // array of zvals to execute
-    //zval params[argc];
-
-    zval* params = new zval[argc];
+    zval* params = static_cast<zval*>(alloca(argc * sizeof(zval)));
 
     // convert all the values
     for(int i = 0; i < argc; i++) { params[i] = *argv[i]._val; }
@@ -919,9 +944,7 @@ Value Value::exec(const char *name, int argc, Value *argv) const
     Value method(name);
 
     // array of zvals to execute
-    //zval params[argc];
-
-    zval* params = new zval[argc];
+    zval* params = static_cast<zval*>(alloca(argc * sizeof(zval)));
 
     // convert all the values
     for(int i = 0; i < argc; i++) { params[i] = *argv[i]._val; }
@@ -943,9 +966,7 @@ Value Value::exec(const char *name, int argc, Value *argv)
     Value method(name);
 
     // array of zvals to execute
-    //zval params[argc];
-
-    zval* params = new zval[argc];
+    zval* params = static_cast<zval*>(alloca(argc * sizeof(zval)));
 
     // convert all the values
     for(int i = 0; i < argc; i++) { params[i] = *argv[i]._val; }
@@ -1333,6 +1354,33 @@ const char *Value::rawValue() const
 }
 
 /**
+ *  Helper function for string comparison
+ *  @param  value
+ *  @return int
+ */
+int Value::strcmp(const char *value) const
+{
+    // we need the string representation
+    zend_string *s  = zval_get_string(_val);
+    
+    // remember size of the two strings
+    size_t valuelen = ::strlen(value);
+    size_t slen = ZSTR_LEN(s);
+    
+    // get the result for comparing the initial, overlapping, bytes
+    auto result = strncmp(ZSTR_VAL(s), value, std::min(valuelen, slen));
+
+    // we no longer need the string
+    zend_string_release(s);
+    
+    // if there are differences, we can expose thosw
+    if (result != 0) return result;
+    
+    // the shorter string comes first
+    return slen - valuelen;
+}
+
+/**
  *  Retrieve the value as decimal
  *  @return double
  */
@@ -1362,9 +1410,13 @@ int Value::size() const
 
         // create a variable to hold the result
         zend_long result;
-
+#if PHP_VERSION_ID < 80000
         // call the function
         return Z_OBJ_HT_P(_val)->count_elements(_val, &result) == SUCCESS ? result : 0;
+#else
+        zend_object *zobj = Z_OBJ_P(_val);
+        return Z_OBJ_HT_P(_val)->count_elements(zobj, &result) == SUCCESS ? result : 0;
+#endif
     }
 
     // not an array, return string size if this is a string
@@ -1508,11 +1560,11 @@ bool Value::contains(const char *key, int size) const
     }
     else if (isObject())
     {
-#if PHP_VERSION_ID >= 70400
         // retrieve the object pointer and check whether the property we are trying to retrieve
-        if (zend_check_property_access(Z_OBJ_P(_val), String(key, size), 0) == FAILURE) return false;
-#else
+#if PHP_VERSION_ID < 70400
         if (zend_check_property_access(Z_OBJ_P(_val), String(key, size)) == FAILURE) return false;
+#else
+        if (zend_check_property_access(Z_OBJ_P(_val), String(key, size), 0) == FAILURE) return false;
 #endif
         // check if the 'has_property' method is available for this object
         auto *has_property = Z_OBJ_HT_P(_val)->has_property;
@@ -1520,12 +1572,22 @@ bool Value::contains(const char *key, int size) const
         // leap out if no 'has_property' function is not set (which should normally not occur)
         if (!has_property) return false;
 
+#if PHP_VERSION_ID < 80000
         // the property must be a zval, turn the key into a value
         Value property(key, size);
 
         // call the has_property() method (0 means: check whether property exists and is not NULL,
         // this is not really what we want, but the closest to the possible values of that parameter)
         return has_property(_val, property._val, 0, nullptr);
+#else
+        int retval = 0;
+        zend_string *tmp_str;
+        tmp_str = zend_string_init(key, size, 0);
+        retval = has_property(Z_OBJ_P(_val), tmp_str, 0, nullptr);
+        zend_string_release(tmp_str);
+        return retval;
+#endif
+
     }
     else
     {
@@ -1596,8 +1658,13 @@ Value Value::get(const char *key, int size) const
         zend_class_entry* scope = EG(fake_scope) ? EG(fake_scope) : zend_get_executed_scope();
 #endif
         // read the property
+#if PHP_VERSION_ID < 80000
         zval *property = zend_read_property(scope, _val, key, size, 0, &rv);
+#else
+        zend_object *zobj = Z_OBJ_P(_val);
+        zval *property = zend_read_property(scope, zobj, key, size, 0, &rv);
 
+#endif
         // wrap in value
         return Value(property);
     }
@@ -1670,7 +1737,12 @@ void Value::setRaw(const char *key, int size, const Value &value)
 #else
         zend_class_entry* scope = EG(fake_scope) ? EG(fake_scope) : zend_get_executed_scope();
 #endif
+#if PHP_VERSION_ID < 80000
         zend_update_property(scope, _val, key, size, value._val);
+#else
+        zend_update_property(scope, Z_OBJ_P(_val), key, size, value._val);
+#endif
+
     }
     else
     {

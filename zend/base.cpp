@@ -3,7 +3,7 @@
  *
  *  Implementation file for the base of all classes
  *
- *  @copyright 2014 - 2022 Copernica BV
+ *  @copyright 2014 - 2024 Copernica BV
  */
 #include "includes.h"
 
@@ -277,7 +277,21 @@ Php::Value Base::__count(Php::Parameters &params)
     if (countable == nullptr) return 0;
 
     // pass the call to the interface
-    return (Php::Value*) countable->count();
+    return countable->count();
+}
+
+/**
+ *  Method that is called when an explicit call to $object->getIterator() is
+ *  made, AND that is called when running on PHP 8 and higher (because somehow
+ *  the get_iterator function is skipped by PHP 8 for non-internal classes)?
+ *  @return Php::Value
+ */
+Php::Value Base::__getIterator()
+{
+    // because the object is already implicitly iterable because deep inside PHP knows that
+    // the "Traversable" method is implemented, we can simply return ourselves (which will
+    // end up that the code in ClassImpl::getIterator() will be called)
+    return this;
 }
 
 /**

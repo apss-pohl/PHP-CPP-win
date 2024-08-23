@@ -11,7 +11,7 @@
  *  Dependencies
  */
 #include "includes.h"
-#include "strings.h"
+#include "string.h"
 
 /**
  *  Open the PHP namespace

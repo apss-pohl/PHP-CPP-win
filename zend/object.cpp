@@ -5,7 +5,7 @@
  *  @copyright 2014 - 2019 Copernica BV
  */
 #include "includes.h"
-#include "strings.h"
+#include "string.h"
 
 /**
  *  Set up namespace

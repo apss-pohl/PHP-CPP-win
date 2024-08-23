@@ -11,7 +11,7 @@
  *  Dependencies
  */
 #include "includes.h"
-#include "strings.h"
+#include "string.h"
 
 /**
  *  Set up namespace
@@ -26,7 +26,7 @@ namespace Php {
 Value constant(const char *name)
 {
     // pass on to other implementation
-    return constant(name);
+    return constant(name, ::strlen(name));
 }
 
 /**

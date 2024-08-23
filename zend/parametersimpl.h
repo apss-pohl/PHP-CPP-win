@@ -29,9 +29,7 @@ public:
         reserve(argc);
 
         // array to store all the arguments in
-        //zval arguments[argc];
-
-        zval* arguments = new zval[argc];
+        zval* arguments = static_cast<zval*>(alloca(argc * sizeof(zval)));
 
         // retrieve the arguments
         zend_get_parameters_array_ex(argc, arguments);
